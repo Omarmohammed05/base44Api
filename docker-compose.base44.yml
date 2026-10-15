@@ -1,0 +1,32 @@
+services:
+  proxy:
+    image: node:22-slim
+    working_dir: /workspace
+    volumes:
+      - ${BASE44_PROJECT_ROOT:-.}:/workspace
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - BASE44_PREVIEW_MODE
+    env_file:
+      - /run/base44/app.env
+    command:
+      [
+        "sh",
+        "-ec",
+        "npm install --omit=dev --no-audit --no-fund && exec node --watch server.js",
+      ]
+    restart: on-failure
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 40s

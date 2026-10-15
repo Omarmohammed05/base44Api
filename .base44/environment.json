@@ -1,0 +1,18 @@
+{
+  "previewPort": 3000,
+  "healthPath": "/health",
+  "startCommand": "docker compose -f docker-compose.base44.yml up -d",
+  "secrets": [
+    {
+      "name": "PROXY_API_KEY",
+      "description": "Bearer key clients must send as 'Authorization: Bearer <key>' on every /v1 request. Set your own value (any random string, e.g. output of: openssl rand -hex 32) in the Base44 Secrets page.",
+      "requiredAtBoot": true,
+      "generatedForDevelopment": true
+    },
+    {
+      "name": "OPENAI_API_KEY",
+      "description": "Optional. If set, the proxy forwards chat completions to an OpenAI-compatible provider (override its URL with OPENAI_BASE_URL). Without it, a clearly-labeled deterministic mock provider responds so the API shape works with zero credentials.",
+      "requiredAtBoot": false
+    }
+  ]
+}
