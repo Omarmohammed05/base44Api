@@ -49,6 +49,10 @@
     <h2>Try it (right on this page)</h2>
     <p>Paste the <code>PROXY_API_KEY</code> value you set in your Base44 Secrets page.</p>
     <input id="key" type="password" autocomplete="off" placeholder="Your PROXY_API_KEY" />
+    <div class="row">
+      <button id="toggle" type="button">Show key</button>
+      <span id="kcount" style="font-size:.85rem;color:#8b96a8"></span>
+    </div>
     <input id="msg" type="text" placeholder="Message to send, e.g. Say hi" />
     <div class="row">
       <button id="btn-models">Test GET /v1/models</button>
@@ -87,6 +91,16 @@
         out.textContent = "Error: " + e.message;
       }
     }
+    const keyEl = document.getElementById("key");
+    const kcount = document.getElementById("kcount");
+    document.getElementById("toggle").onclick = (e) => {
+      const show = keyEl.type === "password";
+      keyEl.type = show ? "text" : "password";
+      e.target.textContent = show ? "Hide key" : "Show key";
+    };
+    keyEl.addEventListener("input", () => {
+      kcount.textContent = keyEl.value.trim().length + " characters";
+    });
     document.getElementById("btn-models").onclick = () => call("/v1/models");
     document.getElementById("btn-chat").onclick = () =>
       call("/v1/chat/completions", {
