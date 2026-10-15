@@ -5,12 +5,15 @@ const UPSTREAM_TIMEOUT_MS = 115000;
 
 const MODELS = [{ id: DEFAULT_MODEL, created: 1700000000, owned_by: "base44" }];
 
-function hasUpstream() {
-  return Boolean(process.env.OPENAI_API_KEY);
+// Provider priority: Base44 app (BASE44_LLM_URL) > OpenAI-compatible (OPENAI_API_KEY) > mock
+function getProvider() {
+  if (process.env.BASE44_LLM_URL) return "base44";
+  if (process.env.OPENAI_API_KEY) return "openai-compatible";
+  return "mock";
 }
 
 function providerName() {
-  return hasUpstream() ? "openai-compatible" : "mock";
+  return getProvider();
 }
 
 // Rough token estimation (~4 chars per token) when exact counts are unavailable.
@@ -31,6 +34,49 @@ function chunkText(text, size = 24) {
   const pieces = [];
   for (let i = 0; i < text.length; i += size) pieces.push(text.slice(i, i + size));
   return pieces.length ? pieces : [""];
+}
+
+// ---- Base44 builder app (BASE44_LLM_URL: published public `llm` function of a Base44 app) ----
+async function base44Chat(req) {
+  const r = await fetch(process.env.BASE44_LLM_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(process.env.BASE44_LLM_KEY
+        ? { Authorization: `Bearer ${process.env.BASE44_LLM_KEY}` }
+        : {}),
+    },
+    body: JSON.stringify({
+      messages: req.messages.map((m) => ({ role: m.role, content: m.content })),
+    }),
+    signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+  });
+  if (!r.ok) {
+    const detail = (await r.text().catch(() => "")).slice(0, 300);
+    const err = new Error(`Base44 LLM function returned ${r.status}: ${detail}`);
+    err.statusCode = 500;
+    err.type = "server_error";
+    throw err;
+  }
+  const text = await r.text();
+  let content = text;
+  try {
+    const data = JSON.parse(text);
+    content =
+      typeof data === "string"
+        ? data
+        : typeof data.content === "string"
+          ? data.content
+          : JSON.stringify(data);
+  } catch (e) {
+    // plain-text response is fine too
+  }
+  return {
+    content,
+    chunks: chunkText(content),
+    model: req.model || DEFAULT_MODEL,
+    finish_reason: "stop",
+  };
 }
 
 // ---- mock provider (default: no LLM provider key configured) ----
@@ -125,11 +171,14 @@ async function openaiModels() {
 }
 
 async function generateChat(req) {
-  return hasUpstream() ? openaiChat(req) : mockChat(req);
+  const provider = getProvider();
+  if (provider === "base44") return base44Chat(req);
+  if (provider === "openai-compatible") return openaiChat(req);
+  return mockChat(req);
 }
 
 async function listModels() {
-  return hasUpstream() ? openaiModels() : MODELS;
+  return getProvider() === "openai-compatible" ? openaiModels() : MODELS;
 }
 
 module.exports = {

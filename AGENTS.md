@@ -13,7 +13,9 @@ landing page in `public/index.html`.
 
 ## Secrets (delivered via /run/base44/app.env, never in the repo)
 - `PROXY_API_KEY` (required at boot): bearer key clients must send. Without it every /v1 request returns 500 `proxy_not_configured`.
-- `OPENAI_API_KEY` (optional): when set, chat completions and the models list are forwarded to an OpenAI-compatible provider (`OPENAI_BASE_URL`, default `https://api.openai.com/v1`). When unset, `llm.js` serves a deterministic, clearly-labeled mock so the whole API shape is testable without any credentials — the Base44 built-in LLM is not reachable from this standalone imported app.
+- `OPENAI_API_KEY` (optional): when set, chat completions and the models list are forwarded to an OpenAI-compatible provider (`OPENAI_BASE_URL`, default `https://api.openai.com/v1`).
+- `BASE44_LLM_URL` (+ optional `BASE44_LLM_KEY`): when set, chat requests are forwarded to the published public `llm` function of a Base44-builder app (body `{messages:[{role,content}]}`, expects `{content:"..."}`) — highest priority.
+- With none set, `llm.js` serves a deterministic, clearly-labeled mock so the whole API shape is testable without any credentials — the Base44 built-in LLM is not directly reachable from this standalone imported app, only via the builder-app route above.
 
 ## Verify
 - `curl localhost:3000/health` → 200.

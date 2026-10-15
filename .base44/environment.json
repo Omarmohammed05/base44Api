@@ -10,6 +10,16 @@
       "generatedForDevelopment": true
     },
     {
+      "name": "BASE44_LLM_URL",
+      "description": "Optional. Public endpoint URL of the `llm` backend function in your published Base44 app (the one that calls the built-in LLM). When set, the proxy forwards every chat request there as {messages:[{role,content}]} and expects {content:\"...\"} back.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "BASE44_LLM_KEY",
+      "description": "Optional. API/access key the Base44 app's public function requires, sent as 'Authorization: Bearer <key>'. Leave unset if the function is public without a key.",
+      "requiredAtBoot": false
+    },
+    {
       "name": "OPENAI_API_KEY",
       "description": "Optional. If set, the proxy forwards chat completions to an OpenAI-compatible provider (override its URL with OPENAI_BASE_URL). Without it, a clearly-labeled deterministic mock provider responds so the API shape works with zero credentials.",
       "requiredAtBoot": false
