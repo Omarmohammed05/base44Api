@@ -22,6 +22,15 @@
   ul { margin: 8px 0; padding-left: 20px; }
   li { margin: 6px 0; font-size: .95rem; }
   p { font-size: .9rem; color: #b6bfcc; }
+  input { width: 100%; font-size: .9rem; padding: 9px 12px; border-radius: 8px;
+          border: 1px solid #232b38; background: #0b0e14; color: #e6e6e6; margin: 6px 0; }
+  button { font-size: .9rem; padding: 8px 14px; border-radius: 8px; border: 1px solid #2b3a55;
+           background: #1d2c44; color: #e6e6e6; cursor: pointer; }
+  button:active { transform: translateY(1px); }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  pre { font-size: .8rem; background: #0b0e14; border: 1px solid #232b38; border-radius: 8px;
+        padding: 12px; overflow-x: auto; white-space: pre-wrap; word-break: break-word;
+        max-height: 320px; overflow-y: auto; }
 </style>
 </head>
 <body>
@@ -37,6 +46,15 @@
     </ul>
     <p>Send <code>Authorization: Bearer &lt;PROXY_API_KEY&gt;</code> with every request.</p>
     <p id="mode"></p>
+    <h2>Try it (right on this page)</h2>
+    <p>Paste the <code>PROXY_API_KEY</code> value you set in your Base44 Secrets page.</p>
+    <input id="key" type="password" autocomplete="off" placeholder="Your PROXY_API_KEY" />
+    <input id="msg" type="text" placeholder="Message to send, e.g. Say hi" />
+    <div class="row">
+      <button id="btn-models">Test GET /v1/models</button>
+      <button id="btn-chat">Test chat completion</button>
+    </div>
+    <pre id="out">Response will appear here.</pre>
   </main>
   <script>
     document.getElementById("base").textContent = location.origin + "/v1";
@@ -50,6 +68,34 @@
             : "LLM mode: live provider (" + h.provider + ")";
       })
       .catch(() => (document.getElementById("status").textContent = "unreachable"));
+
+    // Try-it panel: call the API from the page using the pasted key
+    const out = document.getElementById("out");
+    async function call(path, init) {
+      const key = document.getElementById("key").value.trim();
+      out.textContent = "Loading…";
+      try {
+        const res = await fetch(path, {
+          ...init,
+          headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
+        });
+        const text = await res.text();
+        let pretty = text;
+        try { pretty = JSON.stringify(JSON.parse(text), null, 2); } catch (e) {}
+        out.textContent = "HTTP " + res.status + "\n\n" + pretty;
+      } catch (e) {
+        out.textContent = "Error: " + e.message;
+      }
+    }
+    document.getElementById("btn-models").onclick = () => call("/v1/models");
+    document.getElementById("btn-chat").onclick = () =>
+      call("/v1/chat/completions", {
+        method: "POST",
+        body: JSON.stringify({
+          model: "base44-default",
+          messages: [{ role: "user", content: document.getElementById("msg").value || "Say hi" }],
+        }),
+      });
   </script>
 </body>
 </html>
